@@ -1,0 +1,76 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build release APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease -x lint -x test --no-daemon
+          echo "--- OUTPUT FILES ---"
+          ls -la app/build/outputs/apk/release/ || true
+
+      - name: Create signing key
+        run: |
+          keytool -genkeypair -v \
+            -keystore /tmp/release.keystore \
+            -alias release \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=English Tenses Tutor,O=App,C=US"
+
+      - name: Sign APK
+        run: |
+          APK=$(ls android/app/build/outputs/apk/release/app-release*.apk 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            echo "لا يوجد APK. المحتويات:"
+            find android/app/build/outputs -name "*.apk" 2>/dev/null || echo "(فارغ)"
+            exit 1
+          fi
+          echo "تم العثور على: $APK"
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$BT/zipalign" -f -p 4 "$APK" /tmp/app-aligned.apk
+          "$BT/apksigner" sign \
+            --ks /tmp/release.keystore \
+            --ks-key-alias release \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out /tmp/app-release-signed.apk \
+            /tmp/app-aligned.apk
+          echo "التوقيع تم بنجاح ✅"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: english-tenses-tutor.apk
+          path: /tmp/app-release-signed.apk

@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "English Tenses Tutor",
+    "slug": "english-tenses-tutor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.englishtenses.tutor"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0E1A"
+      },
+      "package": "com.englishtenses.tutor",
+      "versionCode": 3,
+      "permissions": [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#6366F1"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0A0E1A"
+        }
+      ],
+      "expo-system-ui",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6fe37bb4-5313-4910-a5b5-6115dc4d5e34"
+      }
+    },
+    "owner": "gitcgujhub"
+  }
+}
