@@ -1,15 +1,18 @@
 // ═══════════════════════════════════════════════════
 //   English Tenses Tutor — Gemini AI Service
-//   نماذج Flash المجانية فقط — موثقة من ai.google.dev
+//   النماذج الحالية (أغسطس 2026)
 // ═══════════════════════════════════════════════════
 
 export const FREE_MODELS = [
-  { id: 'gemini-2.0-flash',      label: '2.0 Flash ⚡ (الأسرع - موصى به)', recommended: true  },
-  { id: 'gemini-1.5-flash',      label: '1.5 Flash 🔵 (مستقر)',            recommended: false },
-  { id: 'gemini-1.5-flash-8b',   label: '1.5 Flash-8B 🚀 (حدود أعلى)',    recommended: false },
+  { id: 'gemini-3.7-flash',      label: '3.7 Flash ⚡',          desc: 'الأذكى',        recommended: true },
+  { id: 'gemini-3.6-flash',      label: '3.6 Flash 🔵',         desc: 'ممتاز',         recommended: false },
+  { id: 'gemini-3.5-flash',      label: '3.5 Flash 🟢',         desc: 'موثوق',         recommended: false },
+  { id: 'gemini-3.5-flash-lite', label: '3.5 Flash-Lite 🚀',    desc: 'الأسرع',        recommended: false },
+  { id: 'gemini-2.5-flash',      label: '2.5 Flash 🔵',         desc: 'مستقر',         recommended: false },
+  { id: 'gemini-2.5-flash-lite', label: '2.5 Flash-Lite 🟡',    desc: 'خفيف',          recommended: false },
 ];
 
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = 'gemini-3.7-flash';
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 const SYSTEM_PROMPT = `أنت أفضل مدرّس لغة إنجليزية في العالم، متخصص حصراً في الأزمنة الإنجليزية.
@@ -59,11 +62,11 @@ class GeminiService {
     if (!this.apiKey) throw new Error('NO_API_KEY');
 
     const extras = {
-      analyze: '\n[حلّل كل فعل في هذه الجملة واشرح زمنه]',
-      quiz:    '\n[سؤال واحد باختيارات فقط]',
-      why:     '\n[لماذا استُخدم هذا الزمن؟ اشرح بالتفصيل]',
-      scenario:'\n[موقف تخيلي — كيف نتكلم عنه بالأزمنة الصحيحة؟]',
-      fix:     '\n[هل في هذه الجملة خطأ في الزمن؟ صحّحه واشرح]',
+      analyze: '\\n[حلّل كل فعل في هذه الجملة واشرح زمنه]',
+      quiz:    '\\n[سؤال واحد باختيارات فقط]',
+      why:     '\\n[لماذا استُخدم هذا الزمن؟ اشرح بالتفصيل]',
+      scenario:'\\n[موقف تخيلي — كيف نتكلم عنه بالأزمنة الصحيحة؟]',
+      fix:     '\\n[هل في هذه الجملة خطأ في الزمن؟ صحّحه واشرح]',
     };
 
     const msg = userMessage + (extras[mode] || '');
@@ -100,9 +103,10 @@ class GeminiService {
     }
   }
 
+  // التحقق من المفتاح — يستخدم نموذجاً حياً وخفيفاً (هام جداً!)
   async validateKey(key) {
     try {
-      const url = `${BASE_URL}/gemini-1.5-flash-8b:generateContent?key=${key}`;
+      const url = `${BASE_URL}/gemini-3.5-flash-lite:generateContent?key=${key}`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
