@@ -4,6 +4,7 @@ import {
   FlatList, ActivityIndicator, KeyboardAvoidingView, Platform, StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GeminiService from '../services/GeminiService';
 import StorageService from '../services/StorageService';
 
@@ -15,6 +16,7 @@ export default function ChatScreen({ mode, tense, onBack }) {
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
   const listRef = useRef(null);
+  const insets = useSafeAreaInsets();
 
   const title = tense ? tense.ar   : mode?.ar   || 'محادثة';
   const color = tense ? tense.color : mode?.color || '#6366F1';
@@ -26,6 +28,17 @@ export default function ChatScreen({ mode, tense, onBack }) {
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
   }, []);
 
+  const errText = (e) => {
+    switch (e?.message) {
+      case 'RATE_LIMIT':  return 'وصلت لحد الاستخدام المجاني اليوم — عد غداً أو غيّر النموذج ⏱';
+      case 'INVALID_KEY': return 'المفتاح غير صالح — أدخل مفتاحاً جديداً من الإعدادات 🔑';
+      case 'MODEL_GONE':  return 'هذا النموذج غير متاح حالياً — اختر نموذجاً آخر من الإعدادات 🔄';
+      case 'TIMEOUT':     return 'استغرق الرد أكثر من 45 ثانية — أعد المحاولة 🔄';
+      case 'NO_API_KEY':  return 'لا يوجد مفتاح — أعد إدخاله من الإعدادات 🔑';
+      default:            return 'تعذّر الاتصال — تحقق من الإنترنت وأعد المحاولة 🔄';
+    }
+  };
+
   const startSession = async () => {
     setLoading(true);
     try {
@@ -35,8 +48,8 @@ export default function ChatScreen({ mode, tense, onBack }) {
       const reply = await GeminiService.send(prompt, mode?.id || 'chat');
       addMsg('ai', reply);
       setStarted(true);
-    } catch {
-      addMsg('ai', 'تعذّر البدء — تحقق من الإنترنت وأعد المحاولة 🔄');
+    } catch (e) {
+      addMsg('ai', errText(e));
     }
     setLoading(false);
   };
@@ -55,8 +68,7 @@ export default function ChatScreen({ mode, tense, onBack }) {
       if (tense && (ok || bad)) await StorageService.addAnswer(tense.id, ok);
       if (tense && bad) await StorageService.addMistake(tense.id, msg);
     } catch (e) {
-      const m = e.message === 'RATE_LIMIT' ? 'انتظر ثانية وأعد المحاولة ⏱' : 'تعذّر الاتصال 🔄';
-      addMsg('ai', m);
+      addMsg('ai', errText(e));
     }
     setLoading(false);
   };
@@ -89,7 +101,7 @@ export default function ChatScreen({ mode, tense, onBack }) {
         <View style={[S.dot,{backgroundColor: loading ? '#F59E0B' : '#10B981'}]} />
       </LinearGradient>
 
-      <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} style={{flex:1}}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{flex:1}} keyboardVerticalOffset={0}>
         <FlatList
           ref={listRef}
           data={msgs}
@@ -97,6 +109,7 @@ export default function ChatScreen({ mode, tense, onBack }) {
           keyExtractor={i => i.id}
           contentContainerStyle={S.list}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           ListFooterComponent={loading ? (
             <View style={S.loadingRow}>
               <Text style={S.avatar}>🎓</Text>
@@ -116,6 +129,7 @@ export default function ChatScreen({ mode, tense, onBack }) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={S.quickList}
             style={S.quickBar}
+            keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <TouchableOpacity style={S.quickBtn} onPress={() => send(item)}>
                 <Text style={S.quickText}>{item}</Text>
@@ -124,7 +138,7 @@ export default function ChatScreen({ mode, tense, onBack }) {
           />
         )}
 
-        <View style={S.inputRow}>
+        <View style={[S.inputRow, { paddingBottom: Math.max(insets.bottom, 10) }]}>
           <TouchableOpacity style={[S.sendBtn,{backgroundColor:color}]} onPress={() => send()} disabled={loading}>
             <Text style={S.sendIcon}>{loading ? '⏳' : '▶'}</Text>
           </TouchableOpacity>
