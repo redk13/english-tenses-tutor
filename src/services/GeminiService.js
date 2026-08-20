@@ -1,19 +1,21 @@
 // ═══════════════════════════════════════════════════
 //   English Tenses Tutor — Gemini AI Service
-//   النماذج الحالية (أغسطس 2026)
+//   النماذج الحالية (أغسطس 2026) — موثقة من ai.google.dev
+//   الافتراضي: 2.5 Flash-Lite = الأسرع + مجاني بالكامل
 // ═══════════════════════════════════════════════════
 
 export const FREE_MODELS = [
-  { id: 'gemini-3.7-flash',      label: '3.7 Flash ⚡',          desc: 'الأذكى',        recommended: true },
-  { id: 'gemini-3.6-flash',      label: '3.6 Flash 🔵',         desc: 'ممتاز',         recommended: false },
-  { id: 'gemini-3.5-flash',      label: '3.5 Flash 🟢',         desc: 'موثوق',         recommended: false },
-  { id: 'gemini-3.5-flash-lite', label: '3.5 Flash-Lite 🚀',    desc: 'الأسرع',        recommended: false },
-  { id: 'gemini-2.5-flash',      label: '2.5 Flash 🔵',         desc: 'مستقر',         recommended: false },
-  { id: 'gemini-2.5-flash-lite', label: '2.5 Flash-Lite 🟡',    desc: 'خفيف',          recommended: false },
+  { id: 'gemini-2.5-flash-lite', label: '2.5 Flash-Lite 🟡', desc: 'الأسرع — موصى به',       recommended: true  },
+  { id: 'gemini-2.5-flash',      label: '2.5 Flash 🔵',      desc: 'سريع ومستقر',            recommended: false },
+  { id: 'gemini-3.5-flash-lite', label: '3.5 Flash-Lite 🚀', desc: 'أذكى وأسرع',             recommended: false },
+  { id: 'gemini-3.5-flash',      label: '3.5 Flash 🟢',      desc: 'قوي',                    recommended: false },
+  { id: 'gemini-3.6-flash',      label: '3.6 Flash 🔵',      desc: 'أحدث',                   recommended: false },
+  { id: 'gemini-3.7-flash',      label: '3.7 Flash ⚡',      desc: 'الأذكى (أبطأ — تفكير)',  recommended: false },
 ];
 
-const DEFAULT_MODEL = 'gemini-3.7-flash';
+const DEFAULT_MODEL = 'gemini-2.5-flash-lite';
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+const REQUEST_TIMEOUT = 45000; // 45 ثانية كحد أقصى للطلب
 
 const SYSTEM_PROMPT = `أنت أفضل مدرّس لغة إنجليزية في العالم، متخصص حصراً في الأزمنة الإنجليزية.
 شخصيتك: صبور، مشجع، ذكي، لا تكرر نفسك أبداً.
@@ -27,7 +29,7 @@ const SYSTEM_PROMPT = `أنت أفضل مدرّس لغة إنجليزية في �
 ٥. إذا أجاب خطأ: قل "تقريباً!" وصحح بهدوء.
 ٦. إذا قال "لم أفهم": غيّر الأسلوب والمثال تماماً.
 ٧. أمثلة من الحياة اليومية فقط.
-٨. ردودك قصيرة ومركزة.
+٨. ردودك قصيرة ومركزة. لا تتجاوز 4-5 أسطر في كل رد.
 
 الأزمنة:
 ١. الماضي البسيط: فعل+ed | انتهى في وقت محدد | yesterday/ago/last
@@ -58,15 +60,15 @@ class GeminiService {
   getModel() { return this.model; }
   resetHistory() { this.history = []; }
 
-  async send(userMessage, mode = 'chat', retries = 3) {
+  async send(userMessage, mode = 'chat', retries = 2) {
     if (!this.apiKey) throw new Error('NO_API_KEY');
 
     const extras = {
-      analyze: '\\n[حلّل كل فعل في هذه الجملة واشرح زمنه]',
-      quiz:    '\\n[سؤال واحد باختيارات فقط]',
-      why:     '\\n[لماذا استُخدم هذا الزمن؟ اشرح بالتفصيل]',
-      scenario:'\\n[موقف تخيلي — كيف نتكلم عنه بالأزمنة الصحيحة؟]',
-      fix:     '\\n[هل في هذه الجملة خطأ في الزمن؟ صحّحه واشرح]',
+      analyze: '\n[حلّل كل فعل في هذه الجملة واشرح زمنه]',
+      quiz:    '\n[سؤال واحد باختيارات فقط]',
+      why:     '\n[لماذا استُخدم هذا الزمن؟ اشرح بالتفصيل]',
+      scenario:'\n[موقف تخيلي — كيف نتكلم عنه بالأزمنة الصحيحة؟]',
+      fix:     '\n[هل في هذه الجملة خطأ في الزمن؟ صحّحه واشرح]',
     };
 
     const msg = userMessage + (extras[mode] || '');
@@ -76,37 +78,50 @@ class GeminiService {
     const body = {
       system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents: this.history,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
+      generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
     };
 
     for (let i = 0; i < retries; i++) {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
 
-      if (res.status === 429) {
-        if (i < retries - 1) { await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000)); continue; }
-        throw new Error('RATE_LIMIT');
+        if (res.status === 429) {
+          if (i < retries - 1) { await new Promise(r => setTimeout(r, 2000)); continue; }
+          throw new Error('RATE_LIMIT');
+        }
+        if (res.status === 400 || res.status === 403) throw new Error('INVALID_KEY');
+        if (res.status === 404) throw new Error('MODEL_GONE');
+        if (!res.ok) throw new Error('API_ERROR');
+
+        const data = await res.json();
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!reply) throw new Error('EMPTY');
+
+        this.history.push({ role: 'model', parts: [{ text: reply }] });
+        if (this.history.length > 30) this.history = this.history.slice(-30);
+        return reply;
+      } catch (e) {
+        clearTimeout(timer);
+        if (e.name === 'AbortError') throw new Error('TIMEOUT');
+        if (i < retries - 1 && (e.message === 'API_ERROR' || e.message === 'EMPTY')) continue;
+        throw e;
+      } finally {
+        clearTimeout(timer);
       }
-      if (res.status === 400) throw new Error('INVALID_KEY');
-      if (!res.ok) throw new Error('API_ERROR');
-
-      const data = await res.json();
-      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!reply) throw new Error('EMPTY');
-
-      this.history.push({ role: 'model', parts: [{ text: reply }] });
-      if (this.history.length > 30) this.history = this.history.slice(-30);
-      return reply;
     }
   }
 
-  // التحقق من المفتاح — يستخدم نموذجاً حياً وخفيفاً (هام جداً!)
+  // التحقق من المفتاح — نموذج حي خفيف
   async validateKey(key) {
     try {
-      const url = `${BASE_URL}/gemini-3.5-flash-lite:generateContent?key=${key}`;
+      const url = `${BASE_URL}/gemini-2.5-flash-lite:generateContent?key=${key}`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
