@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Switch, ScrollView, Alert, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NotificationService from '../services/NotificationService';
 
 const HOURS   = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = [0, 15, 30, 45];
 
 export default function NotificationsScreen({ onBack }) {
+  const insets = useSafeAreaInsets();
   const [on,     setOn]     = useState(false);
   const [hour,   setHour]   = useState(18);
   const [minute, setMinute] = useState(0);
@@ -43,13 +45,14 @@ export default function NotificationsScreen({ onBack }) {
 
   return (
     <View style={S.container}>
-      <LinearGradient colors={['#12172B','#0A0E1A']} style={S.header}>
-        <TouchableOpacity onPress={onBack} style={S.back}><Text style={S.backText}>← رجوع</Text></TouchableOpacity>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={['#12172B','#0A0E1A']} style={[S.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={onBack} style={S.back} hitSlop={{top:10,bottom:10,left:10,right:10}}><Text style={S.backText}>رجوع ←</Text></TouchableOpacity>
         <Text style={S.title}>🔔 الإشعارات</Text>
         <View style={{width:60}} />
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={S.content}>
+      <ScrollView contentContainerStyle={[S.content, { paddingBottom: insets.bottom + 24 }]}>
         <View style={S.card}>
           <View style={S.toggleRow}>
             <Switch value={on} onValueChange={toggle} trackColor={{false:'#2D3A5C',true:'#6366F1'}} thumbColor={on?'#fff':'#475569'} />
@@ -114,7 +117,7 @@ export default function NotificationsScreen({ onBack }) {
 
 const S = StyleSheet.create({
   container:    { flex:1, backgroundColor:'#0A0E1A' },
-  header:       { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingTop:52, paddingBottom:16, paddingHorizontal:16 },
+  header:       { flexDirection:'row-reverse', alignItems:'center', justifyContent:'space-between', paddingBottom:16, paddingHorizontal:16 },
   back:         { padding:8, minWidth:60 },
   backText:     { color:'#6366F1', fontSize:15, fontWeight:'600' },
   title:        { color:'#F1F5F9', fontSize:17, fontWeight:'700' },
