@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, ScrollView, BackHandler } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import StorageService from './src/services/StorageService';
 import GeminiService from './src/services/GeminiService';
 import SetupScreen from './src/screens/SetupScreen';
@@ -51,6 +51,22 @@ export default function App() {
 
   const goChat = (m = null, t = null) => { setMode(m); setTense(t); setScreen(SC.CHAT); };
 
+  // زر الرجوع الفعلي في الهاتف (أو إيماءة الرجوع) يجب أن يتنقّل داخل التطبيق
+  // أولاً، وألا يُغلق التطبيق إلا عندما نكون فعلاً في الشاشة الرئيسية.
+  useEffect(() => {
+    const onHardwareBack = () => {
+      switch (screen) {
+        case SC.CHAT:     setScreen(SC.HOME);     return true;
+        case SC.SETTINGS: setScreen(SC.HOME);     return true;
+        case SC.REPORTS:  setScreen(SC.HOME);     return true;
+        case SC.NOTIF:    setScreen(SC.SETTINGS); return true;
+        default:          return false; // HOME / SETUP / LOAD → السماح للنظام بإغلاق التطبيق
+      }
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onHardwareBack);
+    return () => sub.remove();
+  }, [screen]);
+
   if (fatal) return (
     <SafeAreaProvider>
       <View style={S.errWrap}>
@@ -79,11 +95,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        {!!banner && (
-          <View style={S.banner}>
-            <Text style={S.bannerText}>{banner.emoji} {banner.title} — {banner.desc}</Text>
-          </View>
-        )}
+        {!!banner && <AchievementBanner banner={banner} />}
         {screen === SC.SETUP    && <SetupScreen onDone={init} />}
         {screen === SC.HOME     && <HomeScreen onMode={m => goChat(m)} onTense={t => goChat(null, t)} onSettings={() => setScreen(SC.SETTINGS)} onReports={() => setScreen(SC.REPORTS)} />}
         {screen === SC.CHAT     && <ChatScreen mode={mode} tense={tense} onBack={() => setScreen(SC.HOME)} />}
@@ -92,6 +104,17 @@ export default function App() {
         {screen === SC.NOTIF    && <NotifScreen onBack={() => setScreen(SC.SETTINGS)} />}
       </ErrorBoundary>
     </SafeAreaProvider>
+  );
+}
+
+// شارة الإنجاز تُحسب من أعلى المنطقة الآمنة فعلياً (لا تصطدم بالساعة/الشحن
+// أو بشريط الحالة على أجهزة Android الحديثة ذات وضع edge-to-edge).
+function AchievementBanner({ banner }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[S.banner, { top: insets.top + 10 }]}>
+      <Text style={S.bannerText}>{banner.emoji} {banner.title} — {banner.desc}</Text>
+    </View>
   );
 }
 
@@ -124,7 +147,7 @@ class ErrorBoundary extends React.Component {
 const S = StyleSheet.create({
   loading:    { flex:1, backgroundColor:'#0A0E1A', alignItems:'center', justifyContent:'center' },
   logo:       { fontSize:72 },
-  banner:     { position:'absolute', top:50, left:16, right:16, zIndex:999, backgroundColor:'#F59E0B', borderRadius:14, padding:14, alignItems:'center', elevation:10 },
+  banner:     { position:'absolute', left:16, right:16, zIndex:999, backgroundColor:'#F59E0B', borderRadius:14, padding:14, alignItems:'center', elevation:10 },
   bannerText: { color:'#0A0E1A', fontWeight:'800', fontSize:14, textAlign:'center' },
   errWrap:    { flex:1, backgroundColor:'#0A0E1A', alignItems:'center', justifyContent:'center', padding:24 },
   errEmoji:   { fontSize:56, marginBottom:12 },
