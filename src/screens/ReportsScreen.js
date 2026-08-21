@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar, ActivityIndicator, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StorageService, { ACHIEVEMENTS } from '../services/StorageService';
 import { TENSES } from '../data/tenses';
 
@@ -9,6 +10,7 @@ const CHART_H = 100;
 const DAYS = { Sun:'أحد', Mon:'اثن', Tue:'ثلا', Wed:'أرب', Thu:'خمس', Fri:'جمع', Sat:'سبت' };
 
 export default function ReportsScreen({ onBack }) {
+  const insets = useSafeAreaInsets();
   const [data,  setData]  = useState(null);
   const [earned,setEarned]= useState([]);
   const [tab,   setTab]   = useState('week');
@@ -32,8 +34,8 @@ export default function ReportsScreen({ onBack }) {
   return (
     <View style={S.container}>
       <StatusBar barStyle="light-content" />
-      <LinearGradient colors={['#12172B','#0A0E1A']} style={S.header}>
-        <TouchableOpacity onPress={onBack} style={S.back}><Text style={S.backText}>← رجوع</Text></TouchableOpacity>
+      <LinearGradient colors={['#12172B','#0A0E1A']} style={[S.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={onBack} style={S.back} hitSlop={{top:10,bottom:10,left:10,right:10}}><Text style={S.backText}>رجوع ←</Text></TouchableOpacity>
         <Text style={S.headerTitle}>📊 تقريرك التفصيلي</Text>
         <View style={{width:60}} />
       </LinearGradient>
@@ -46,7 +48,7 @@ export default function ReportsScreen({ onBack }) {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={S.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[S.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
 
         {tab === 'week' && (
           <>
@@ -191,7 +193,7 @@ const S = StyleSheet.create({
   container:   { flex:1, backgroundColor:'#0A0E1A' },
   loading:     { flex:1, backgroundColor:'#0A0E1A', alignItems:'center', justifyContent:'center', gap:16 },
   loadingText: { color:'#64748B', fontSize:15 },
-  header:      { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingTop:52, paddingBottom:16, paddingHorizontal:16 },
+  header:      { flexDirection:'row-reverse', alignItems:'center', justifyContent:'space-between', paddingBottom:16, paddingHorizontal:16 },
   back:        { padding:8, minWidth:60 },
   backText:    { color:'#6366F1', fontSize:15, fontWeight:'600' },
   headerTitle: { color:'#F1F5F9', fontSize:17, fontWeight:'700' },
