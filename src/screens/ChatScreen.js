@@ -7,8 +7,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GeminiService from '../services/GeminiService';
 import StorageService from '../services/StorageService';
+import MessageText from '../components/MessageText';
 
 const QUICK = ['لم أفهم 😕', 'مثال آخر؟', 'لماذا؟', 'اختبرني ⚡', 'التالي ➡️', 'هل هذا صح؟'];
+const QUICK_BAR_HEIGHT = 52;
 
 export default function ChatScreen({ mode, tense, onBack }) {
   const [msgs,    setMsgs]    = useState([]);
@@ -79,7 +81,11 @@ export default function ChatScreen({ mode, tense, onBack }) {
       <View style={[S.msgRow, isUser ? S.rowUser : S.rowAI]}>
         {!isUser && <Text style={S.avatar}>🎓</Text>}
         <View style={[S.bubble, isUser ? S.bubbleUser : S.bubbleAI]}>
-          <Text style={[S.bubbleText, isUser ? S.textUser : S.textAI]}>{item.text}</Text>
+          <MessageText
+            text={item.text}
+            style={[S.bubbleText, isUser ? S.textUser : S.textAI]}
+            boldStyle={S.bubbleBold}
+          />
           <Text style={S.time}>{item.time}</Text>
         </View>
       </View>
@@ -90,24 +96,29 @@ export default function ChatScreen({ mode, tense, onBack }) {
     <View style={S.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0A0E1A" />
 
-      <LinearGradient colors={['#12172B','#0A0E1A']} style={S.header}>
-        <TouchableOpacity onPress={onBack} style={S.backBtn}>
-          <Text style={S.backText}>← رجوع</Text>
-        </TouchableOpacity>
+      <LinearGradient colors={['#12172B','#0A0E1A']} style={[S.header, { paddingTop: insets.top + 12 }]}>
+        <View style={[S.dot, { backgroundColor: loading ? '#F59E0B' : '#10B981' }]} />
         <View style={S.headerCenter}>
-          <Text style={S.headerTitle}>{title}</Text>
+          <Text style={S.headerTitle} numberOfLines={1}>{title}</Text>
           {tense && <Text style={[S.headerSub,{color}]}>{tense.formula}</Text>}
         </View>
-        <View style={[S.dot,{backgroundColor: loading ? '#F59E0B' : '#10B981'}]} />
+        <TouchableOpacity onPress={onBack} style={S.backBtn} hitSlop={{top:10,bottom:10,left:10,right:10}}>
+          <Text style={S.backText}>رجوع ←</Text>
+        </TouchableOpacity>
       </LinearGradient>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{flex:1}} keyboardVerticalOffset={0}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={0}
+      >
         <FlatList
           ref={listRef}
+          style={S.list}
           data={msgs}
           renderItem={renderMsg}
           keyExtractor={i => i.id}
-          contentContainerStyle={S.list}
+          contentContainerStyle={S.listContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           ListFooterComponent={loading ? (
@@ -127,12 +138,12 @@ export default function ChatScreen({ mode, tense, onBack }) {
             data={QUICK}
             keyExtractor={i => i}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={S.quickList}
             style={S.quickBar}
+            contentContainerStyle={S.quickList}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <TouchableOpacity style={S.quickBtn} onPress={() => send(item)}>
-                <Text style={S.quickText}>{item}</Text>
+                <Text style={S.quickText} numberOfLines={1}>{item}</Text>
               </TouchableOpacity>
             )}
           />
@@ -160,14 +171,15 @@ export default function ChatScreen({ mode, tense, onBack }) {
 
 const S = StyleSheet.create({
   container:    { flex:1, backgroundColor:'#0A0E1A' },
-  header:       { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingTop:52, paddingBottom:16, paddingHorizontal:16 },
+  header:       { flexDirection:'row-reverse', alignItems:'center', justifyContent:'space-between', paddingBottom:16, paddingHorizontal:16 },
   backBtn:      { padding:8 },
   backText:     { color:'#6366F1', fontSize:15, fontWeight:'600' },
-  headerCenter: { alignItems:'center', flex:1 },
+  headerCenter: { alignItems:'center', flex:1, paddingHorizontal:8 },
   headerTitle:  { color:'#F1F5F9', fontSize:17, fontWeight:'700' },
   headerSub:    { fontSize:12, fontFamily:'monospace', marginTop:2 },
   dot:          { width:10, height:10, borderRadius:5 },
-  list:         { padding:16, paddingBottom:8 },
+  list:         { flex:1 },
+  listContent:  { padding:16, paddingBottom:8 },
   msgRow:       { flexDirection:'row', marginBottom:12, alignItems:'flex-end', gap:8 },
   rowUser:      { justifyContent:'flex-end' },
   rowAI:        { justifyContent:'flex-start' },
@@ -176,15 +188,16 @@ const S = StyleSheet.create({
   bubbleUser:   { backgroundColor:'#4338CA', borderBottomRightRadius:4 },
   bubbleAI:     { backgroundColor:'#1E2640', borderBottomLeftRadius:4, borderWidth:1, borderColor:'#2D3A5C' },
   bubbleText:   { fontSize:15, lineHeight:22 },
-  textUser:     { color:'#E0E7FF', textAlign:'right' },
-  textAI:       { color:'#E2E8F0', textAlign:'right' },
+  bubbleBold:   { fontWeight:'800' },
+  textUser:     { color:'#E0E7FF', textAlign:'right', writingDirection:'rtl' },
+  textAI:       { color:'#E2E8F0', textAlign:'right', writingDirection:'rtl' },
   time:         { color:'#475569', fontSize:10, textAlign:'right', marginTop:4 },
   loadingRow:   { flexDirection:'row', alignItems:'flex-end', gap:8, marginBottom:12 },
   loadingBubble:{ backgroundColor:'#1E2640', borderRadius:16, padding:12, flexDirection:'row', alignItems:'center', gap:8, borderWidth:1, borderColor:'#2D3A5C' },
   loadingText:  { color:'#64748B', fontSize:13 },
-  quickBar:     { borderTopWidth:1, borderTopColor:'#1E2640' },
-  quickList:    { paddingHorizontal:12, paddingVertical:8, gap:8 },
-  quickBtn:     { backgroundColor:'#1E2640', borderRadius:20, paddingHorizontal:14, paddingVertical:8, borderWidth:1, borderColor:'#2D3A5C' },
+  quickBar:     { flexGrow:0, flexShrink:0, height:QUICK_BAR_HEIGHT, borderTopWidth:1, borderTopColor:'#1E2640' },
+  quickList:    { paddingHorizontal:12, alignItems:'center', gap:8 },
+  quickBtn:     { backgroundColor:'#1E2640', borderRadius:20, paddingHorizontal:14, height:36, alignItems:'center', justifyContent:'center', borderWidth:1, borderColor:'#2D3A5C' },
   quickText:    { color:'#A5B4FC', fontSize:13 },
   inputRow:     { flexDirection:'row', padding:12, gap:10, alignItems:'flex-end', backgroundColor:'#12172B', borderTopWidth:1, borderTopColor:'#1E2640' },
   input:        { flex:1, backgroundColor:'#1E2640', borderRadius:20, paddingHorizontal:16, paddingVertical:10, color:'#F1F5F9', fontSize:15, maxHeight:100, borderWidth:1, borderColor:'#2D3A5C' },
