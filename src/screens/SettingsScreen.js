@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GeminiService, { FREE_MODELS } from '../services/GeminiService';
 import StorageService from '../services/StorageService';
 
 export default function SettingsScreen({ onBack, onReset, onNotifications }) {
+  const insets = useSafeAreaInsets();
   const [model,   setModel]   = useState(GeminiService.getModel());
   const [results, setResults] = useState({});
   const [testing, setTesting] = useState(false);
@@ -39,13 +41,13 @@ export default function SettingsScreen({ onBack, onReset, onNotifications }) {
   return (
     <View style={S.container}>
       <StatusBar barStyle="light-content" />
-      <LinearGradient colors={['#12172B','#0A0E1A']} style={S.header}>
-        <TouchableOpacity onPress={onBack} style={S.back}><Text style={S.backText}>← رجوع</Text></TouchableOpacity>
+      <LinearGradient colors={['#12172B','#0A0E1A']} style={[S.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={onBack} style={S.back} hitSlop={{top:10,bottom:10,left:10,right:10}}><Text style={S.backText}>رجوع ←</Text></TouchableOpacity>
         <Text style={S.title}>⚙️ الإعدادات</Text>
         <View style={{width:60}} />
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={S.content}>
+      <ScrollView contentContainerStyle={[S.content, { paddingBottom: insets.bottom + 24 }]}>
 
         {/* Model */}
         <View style={S.card}>
@@ -96,7 +98,7 @@ export default function SettingsScreen({ onBack, onReset, onNotifications }) {
 
 const S = StyleSheet.create({
   container:      { flex:1, backgroundColor:'#0A0E1A' },
-  header:         { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingTop:52, paddingBottom:16, paddingHorizontal:16 },
+  header:         { flexDirection:'row-reverse', alignItems:'center', justifyContent:'space-between', paddingBottom:16, paddingHorizontal:16 },
   back:           { padding:8, minWidth:60 },
   backText:       { color:'#6366F1', fontSize:15, fontWeight:'600' },
   title:          { color:'#F1F5F9', fontSize:17, fontWeight:'700' },
