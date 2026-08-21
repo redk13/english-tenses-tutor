@@ -4,10 +4,12 @@ import {
   ActivityIndicator, ScrollView, Linking, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GeminiService from '../services/GeminiService';
 import StorageService from '../services/StorageService';
 
 export default function SetupScreen({ onDone }) {
+  const insets = useSafeAreaInsets();
   const [key, setKey]       = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState('');
@@ -29,7 +31,10 @@ export default function SetupScreen({ onDone }) {
   return (
     <LinearGradient colors={['#0A0E1A','#12172B','#0A0E1A']} style={S.container}>
       <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} style={{flex:1}}>
-        <ScrollView contentContainerStyle={S.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[S.scroll, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}
+          showsVerticalScrollIndicator={false}
+        >
 
           <Text style={S.logo}>🎓</Text>
           <Text style={S.title}>English Tenses Tutor</Text>
@@ -85,7 +90,7 @@ function Row({ icon, text }) {
 
 const S = StyleSheet.create({
   container:  { flex:1 },
-  scroll:     { padding:24, paddingTop:64, alignItems:'center' },
+  scroll:     { padding:24, alignItems:'center' },
   logo:       { fontSize:72, marginBottom:12 },
   title:      { fontSize:24, fontWeight:'800', color:'#F1F5F9', textAlign:'center', marginBottom:6 },
   sub:        { fontSize:14, color:'#94A3B8', textAlign:'center', marginBottom:32 },
