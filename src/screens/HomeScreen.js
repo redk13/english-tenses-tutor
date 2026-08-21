@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TENSES, MODES } from '../data/tenses';
 import StorageService from '../services/StorageService';
 
 export default function HomeScreen({ onMode, onTense, onSettings, onReports }) {
+  const insets = useSafeAreaInsets();
   const [streak,   setStreak]   = useState(0);
   const [correct,  setCorrect]  = useState(0);
   const [accuracy, setAccuracy] = useState(0);
@@ -31,7 +33,7 @@ export default function HomeScreen({ onMode, onTense, onSettings, onReports }) {
       <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* Header */}
-        <LinearGradient colors={['#12172B','#0A0E1A']} style={S.header}>
+        <LinearGradient colors={['#12172B','#0A0E1A']} style={[S.header, { paddingTop: insets.top + 16 }]}>
           <View style={S.headerRow}>
             <Text style={S.greeting}>مرحباً! 👋</Text>
             <View style={S.headerBtns}>
@@ -94,7 +96,7 @@ export default function HomeScreen({ onMode, onTense, onSettings, onReports }) {
           ))}
         </View>
 
-        <View style={{height:40}} />
+        <View style={{height: insets.bottom + 24}} />
       </ScrollView>
     </View>
   );
@@ -112,8 +114,8 @@ function Stat({ icon, value, label, color }) {
 
 const S = StyleSheet.create({
   container:    { flex:1, backgroundColor:'#0A0E1A' },
-  header:       { paddingTop:56, paddingBottom:24, paddingHorizontal:20 },
-  headerRow:    { flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:4 },
+  header:       { paddingBottom:24, paddingHorizontal:20 },
+  headerRow:    { flexDirection:'row-reverse', justifyContent:'space-between', alignItems:'center', marginBottom:4 },
   greeting:     { fontSize:22, fontWeight:'800', color:'#F1F5F9' },
   headerBtns:   { flexDirection:'row', gap:8 },
   iconBtn:      { padding:8 },
